@@ -1,0 +1,29 @@
+{
+  "name": "@uap/admin-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3300",
+    "build": "next build",
+    "start": "next start --port 3300",
+    "lint": "next lint",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@uap/config": "workspace:*",
+    "@uap/ts-sdk": "workspace:*",
+    "@uap/ui": "workspace:*",
+    "next": "^15.2.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17"
+  }
+}
+

@@ -1,0 +1,41 @@
+{
+  "uid": "uap-data-plane",
+  "title": "Data Plane",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Stateful Dependencies",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "Watch Kafka, Redis, PostgreSQL, Qdrant, MinIO, ClickHouse and Temporal baseline health."
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Data Plane Up",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "sum(up{job=~\".*postgres.*|.*redis.*|.*kafka.*|.*qdrant.*|.*minio.*|.*temporal.*\"})", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

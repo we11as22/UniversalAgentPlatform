@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: {{ .Values.global.namespace }}
+data:
+  010-bootstrap-platform.sh: |
+{{ .Files.Get "infra/postgres/init/010-bootstrap-platform.sh" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-migrations
+  namespace: {{ .Values.global.namespace }}
+data:
+  0001_init.up.sql: |
+{{ .Files.Get "infra/postgres/migrations/0001_init.up.sql" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-seeds
+  namespace: {{ .Values.global.namespace }}
+data:
+  001-demo-data.sql: |
+{{ .Files.Get "infra/postgres/seeds/001-demo-data.sql" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm
+  namespace: {{ .Values.global.namespace }}
+data:
+  uap-realm.json: |
+{{ .Files.Get "infra/keycloak/realm-import/uap-realm.json" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: livekit-config
+  namespace: {{ .Values.global.namespace }}
+data:
+  livekit.yaml: |
+{{ .Files.Get "infra/livekit/livekit.yaml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: temporal-dynamicconfig
+  namespace: {{ .Values.global.namespace }}
+data:
+  development-sql.yaml: |
+{{ .Files.Get "infra/temporal/dynamicconfig/development-sql.yaml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: {{ .Values.global.namespace }}
+data:
+  config.yaml: |
+{{ .Files.Get "infra/observability/otel-collector.yaml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: {{ .Values.global.namespace }}
+data:
+  prometheus.yml: |
+{{ .Files.Get "infra/observability/prometheus.yml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: {{ .Values.global.namespace }}
+data:
+  loki-config.yml: |
+{{ .Files.Get "infra/observability/loki-config.yml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tempo-config
+  namespace: {{ .Values.global.namespace }}
+data:
+  tempo.yaml: |
+{{ .Files.Get "infra/observability/tempo.yaml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: {{ .Values.global.namespace }}
+data:
+  datasources.yaml: |
+{{ .Files.Get "infra/observability/grafana-datasources/datasources.yaml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-provisioning
+  namespace: {{ .Values.global.namespace }}
+data:
+  dashboards.yaml: |
+{{ .Files.Get "infra/observability/grafana-dashboards/dashboards.yaml" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: {{ .Values.global.namespace }}
+data:
+  platform-overview.json: |
+{{ .Files.Get "infra/observability/dashboards/platform-overview.json" | indent 4 }}
+  chat-pipeline.json: |
+{{ .Files.Get "infra/observability/dashboards/chat-pipeline.json" | indent 4 }}
+  voice-pipeline.json: |
+{{ .Files.Get "infra/observability/dashboards/voice-pipeline.json" | indent 4 }}
+  provider-health.json: |
+{{ .Files.Get "infra/observability/dashboards/provider-health.json" | indent 4 }}
+  triton-inference.json: |
+{{ .Files.Get "infra/observability/dashboards/triton-inference.json" | indent 4 }}
+  data-plane.json: |
+{{ .Files.Get "infra/observability/dashboards/data-plane.json" | indent 4 }}
+  agent-overview.json: |
+{{ .Files.Get "infra/observability/dashboards/agent-overview.json" | indent 4 }}
+  tenant-overview.json: |
+{{ .Files.Get "infra/observability/dashboards/tenant-overview.json" | indent 4 }}
+  load-testing-results.json: |
+{{ .Files.Get "infra/observability/dashboards/load-testing-results.json" | indent 4 }}
+  cost-usage-latency.json: |
+{{ .Files.Get "infra/observability/dashboards/cost-usage-latency.json" | indent 4 }}
+{{- if and .Values.deployments.triton .Values.deployments.triton.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triton-model-llm
+  namespace: {{ .Values.global.namespace }}
+data:
+  config.pbtxt: |
+{{ .Files.Get "infra/triton/model-repository/llm/demo-llm/config.pbtxt" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triton-model-asr
+  namespace: {{ .Values.global.namespace }}
+data:
+  config.pbtxt: |
+{{ .Files.Get "infra/triton/model-repository/asr/demo-asr/config.pbtxt" | indent 4 }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: triton-model-tts
+  namespace: {{ .Values.global.namespace }}
+data:
+  config.pbtxt: |
+{{ .Files.Get "infra/triton/model-repository/tts/demo-tts/config.pbtxt" | indent 4 }}
+{{- end }}

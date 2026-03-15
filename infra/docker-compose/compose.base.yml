@@ -1,0 +1,165 @@
+services:
+  postgres:
+    image: postgres:16.8
+    environment:
+      POSTGRES_DB: uap
+      POSTGRES_USER: uap
+      POSTGRES_PASSWORD: uap
+    ports:
+      - "${POSTGRES_PORT:-15432}:5432"
+    volumes:
+      - ../postgres/init:/docker-entrypoint-initdb.d:ro
+      - ../postgres/migrations:/bootstrap/migrations:ro
+      - ../postgres/seeds:/bootstrap/seeds:ro
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U uap -d uap"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4
+    ports:
+      - "${REDIS_PORT:-16379}:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+
+  kafka:
+    image: apache/kafka:3.9.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - "${KAFKA_PORT:-19092}:9092"
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    ports:
+      - "${QDRANT_PORT:-16334}:6333"
+
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-02-18T16-25-55Z
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+    ports:
+      - "${MINIO_PORT:-19000}:9000"
+      - "${MINIO_CONSOLE_PORT:-19001}:9001"
+    volumes:
+      - minio-data:/data
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.1
+    ports:
+      - "${CLICKHOUSE_HTTP_PORT:-18123}:8123"
+      - "${CLICKHOUSE_NATIVE_PORT:-19002}:9000"
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+
+  temporal:
+    image: temporalio/auto-setup:1.26.2
+    environment:
+      DB: postgresql12
+      DB_PORT: 5432
+      POSTGRES_USER: uap
+      POSTGRES_PWD: uap
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    depends_on:
+      - postgres
+    ports:
+      - "${TEMPORAL_PORT:-17233}:7233"
+    volumes:
+      - ../temporal/dynamicconfig:/etc/temporal/config/dynamicconfig:ro
+
+  temporal-ui:
+    image: temporalio/ui:2.34.0
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    depends_on:
+      - temporal
+    ports:
+      - "${TEMPORAL_UI_PORT:-18088}:8080"
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.1.2
+    command: ["start-dev", "--import-realm", "--health-enabled=true", "--metrics-enabled=true"]
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: dev-file
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_PORT:-18081}:8080"
+    volumes:
+      - ../keycloak/realm-import:/opt/keycloak/data/import:ro
+
+  livekit:
+    image: livekit/livekit-server:v1.8.3
+    command: ["--config", "/etc/livekit/livekit.yaml"]
+    ports:
+      - "${LIVEKIT_PORT:-17882}:7880"
+      - "${LIVEKIT_RTC_PORT:-17883}:7881/udp"
+    volumes:
+      - ../livekit/livekit.yaml:/etc/livekit/livekit.yaml:ro
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.120.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ../observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "${OTEL_GRPC_PORT:-14317}:4317"
+      - "${OTEL_HTTP_PORT:-14318}:4318"
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    command: ["--config.file=/etc/prometheus/prometheus.yml"]
+    volumes:
+      - ../observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "${PROMETHEUS_PORT:-19090}:9090"
+
+  loki:
+    image: grafana/loki:3.4.2
+    command: ["-config.file=/etc/loki/loki-config.yml"]
+    volumes:
+      - ../observability/loki-config.yml:/etc/loki/loki-config.yml:ro
+    ports:
+      - "${LOKI_PORT:-13100}:3100"
+
+  tempo:
+    image: grafana/tempo:2.7.1
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      - ../observability/tempo.yaml:/etc/tempo/tempo.yaml:ro
+    ports:
+      - "${TEMPO_PORT:-13201}:3200"
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "${GRAFANA_PORT:-13000}:3000"
+    volumes:
+      - ../observability/grafana-datasources:/etc/grafana/provisioning/datasources:ro
+      - ../observability/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ../observability/dashboards:/var/lib/grafana/dashboards:ro
+
+volumes:
+  postgres-data:
+  minio-data:
+  clickhouse-data:

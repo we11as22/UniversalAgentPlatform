@@ -1,0 +1,41 @@
+{
+  "uid": "uap-voice-pipeline",
+  "title": "Voice Pipeline",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Voice Focus",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "Track session setup latency, transcript propagation, TTS/ASR posture and interruption recovery."
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Voice Services Up",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "sum(up{job=~\".*voice.*|.*transcript.*|.*livekit.*\"})", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

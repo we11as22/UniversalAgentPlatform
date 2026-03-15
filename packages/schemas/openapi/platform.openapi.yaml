@@ -1,0 +1,465 @@
+openapi: 3.1.0
+info:
+  title: UniversalAgentPlatform API
+  version: 0.1.0
+  description: Public REST surface for chat, admin and external agent invocation.
+servers:
+  - url: http://localhost:3200
+tags:
+  - name: health
+  - name: agents
+  - name: conversations
+  - name: files
+paths:
+  /api/health:
+    get:
+      tags: [health]
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /api/v1/agents:
+    get:
+      tags: [agents]
+      operationId: listAgents
+      responses:
+        "200":
+          description: Registered agents available to the current tenant
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AgentSummary"
+  /api/v1/agents/{agent_id}/respond:
+    post:
+      tags: [agents]
+      operationId: invokeAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentInvokeRequest"
+      responses:
+        "200":
+          description: Synchronous agent response for external application integration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInvokeResponse"
+  /api/v1/agents/{agent_id}/respond/stream:
+    get:
+      tags: [agents]
+      operationId: streamAgent
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: message
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: SSE stream for agent response
+    post:
+      tags: [agents]
+      operationId: streamAgentPost
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentInvokeRequest"
+      responses:
+        "200":
+          description: SSE stream for agent response using a POST body
+  /api/v1/agents/{agent_id}/respond/ws:
+    get:
+      tags: [agents]
+      operationId: streamAgentWebSocket
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "101":
+          description: WebSocket upgraded transport for bidirectional agent streaming. Emits run.started, message.delta, stream.heartbeat, run.completed, and run.failed events.
+  /api/v1/agents/{agent_id}/respond-from-voice:
+    post:
+      tags: [agents]
+      operationId: invokeAgentFromVoice
+      parameters:
+        - name: agent_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentVoiceInvokeRequest"
+      responses:
+        "200":
+          description: Non-streaming voice-input invocation for text, voice, or realtime voice agents
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentInvokeResponse"
+  /api/v1/perf/runs/{perf_run_id}/results:
+    get:
+      tags: [conversations]
+      operationId: listPerfRunResults
+      parameters:
+        - name: perf_run_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Persisted metrics for a completed or running perf run
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PerfRunResult"
+  /api/v1/conversations:
+    get:
+      tags: [conversations]
+      operationId: listConversations
+      responses:
+        "200":
+          description: Conversation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationSummary"
+    post:
+      tags: [conversations]
+      operationId: createConversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateConversationRequest"
+      responses:
+        "201":
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateConversationResponse"
+  /api/v1/conversations/search:
+    get:
+      tags: [conversations]
+      operationId: searchConversations
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Filtered conversation list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConversationSummary"
+  /api/v1/conversations/{conversation_id}/messages:
+    get:
+      tags: [conversations]
+      operationId: listMessages
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Conversation messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MessageRecord"
+  /api/v1/conversations/{conversation_id}/runs:
+    post:
+      tags: [conversations]
+      operationId: startConversationRun
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRunRequest"
+      responses:
+        "201":
+          description: Run started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateRunResponse"
+  /api/v1/conversations/{conversation_id}/runs/ws:
+    get:
+      tags: [conversations]
+      operationId: streamConversationWebSocket
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "101":
+          description: WebSocket upgraded transport for bidirectional conversation runs. run.started includes run_id so clients can replay the same run over SSE if the socket degrades.
+  /api/v1/files/upload:
+    post:
+      tags: [files]
+      operationId: uploadFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        "201":
+          description: File metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileUploadResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        service:
+          type: string
+        status:
+          type: string
+        version:
+          type: string
+      required: [service, status, version]
+    AgentSummary:
+      type: object
+      properties:
+        agent_id:
+          type: string
+        slug:
+          type: string
+        display_name:
+          type: string
+        description:
+          type: string
+        modality:
+          type: string
+        rag_enabled:
+          type: boolean
+      required: [agent_id, display_name, description, modality]
+    AgentInvokeRequest:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+        user_id:
+          type: string
+        message:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required: [message]
+    AgentVoiceInvokeRequest:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+        user_id:
+          type: string
+        text_hint:
+          type: string
+          nullable: true
+        audio_base64:
+          type: string
+        audio_format:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        speak_response:
+          type: boolean
+    AgentInvokeResponse:
+      type: object
+      properties:
+        agent_id:
+          type: string
+        agent_version_id:
+          type: string
+        modality:
+          type: string
+        tenant_id:
+          type: string
+        user_id:
+          type: string
+        provider_name:
+          type: string
+        provider_kind:
+          type: string
+        rag_enabled:
+          type: boolean
+        text:
+          type: string
+        retrieval:
+          oneOf:
+            - type: object
+              additionalProperties: true
+            - type: "null"
+        metadata:
+          type: object
+          additionalProperties: true
+        transcript:
+          type: string
+        tts:
+          type: object
+          additionalProperties: true
+      required: [agent_id, agent_version_id, tenant_id, provider_name, provider_kind, rag_enabled, text]
+    PerfRunResult:
+      type: object
+      properties:
+        metric_name:
+          type: string
+        metric_value:
+          type: number
+        unit:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+      required: [metric_name, metric_value, unit]
+    ConversationSummary:
+      type: object
+      properties:
+        conversation_id:
+          type: string
+        agent_id:
+          type: string
+        title:
+          type: string
+      required: [conversation_id, agent_id, title]
+    CreateConversationRequest:
+      type: object
+      properties:
+        user_id:
+          type: string
+        agent_id:
+          type: string
+        title:
+          type: string
+      required: [agent_id]
+    CreateConversationResponse:
+      type: object
+      properties:
+        conversation_id:
+          type: string
+      required: [conversation_id]
+    MessageRecord:
+      type: object
+      properties:
+        message_id:
+          type: string
+        role:
+          type: string
+        content:
+          type: string
+      required: [message_id, role, content]
+    CreateRunRequest:
+      type: object
+      properties:
+        message:
+          type: string
+        agent_id:
+          type: string
+      required: [message, agent_id]
+    CreateRunResponse:
+      type: object
+      properties:
+        run_id:
+          type: string
+        message_id:
+          type: string
+        text:
+          type: string
+      required: [run_id, message_id, text]
+    FileUploadResponse:
+      type: object
+      properties:
+        file_name:
+          type: string
+        size:
+          type: integer
+        path:
+          type: string
+      required: [file_name, size, path]
+    AgentStreamEvent:
+      type: object
+      properties:
+        type:
+          type: string
+        sequence:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          additionalProperties: true
+      required: [type, sequence, timestamp]

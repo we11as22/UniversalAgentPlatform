@@ -1,0 +1,43 @@
+{
+  auto_https off
+}
+
+http://chat.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_CHAT_TARGET}
+}
+
+http://admin.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_ADMIN_TARGET}
+}
+
+http://api.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_API_TARGET}
+}
+
+http://admin-api.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_ADMIN_API_TARGET}
+}
+
+http://grafana.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_GRAFANA_TARGET}
+}
+
+http://prometheus.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_PROMETHEUS_TARGET}
+}
+
+http://keycloak.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_KEYCLOAK_TARGET}
+}
+
+http://temporal.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_TEMPORAL_TARGET}
+}
+
+http://minio.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_MINIO_TARGET}
+}
+
+http://livekit.{$UAP_BASE_DOMAIN} {
+  reverse_proxy {$UAP_EDGE_LIVEKIT_TARGET}
+}

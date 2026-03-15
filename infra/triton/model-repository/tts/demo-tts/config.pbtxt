@@ -1,0 +1,4 @@
+name: "demo-tts"
+backend: "python"
+max_batch_size: 8
+

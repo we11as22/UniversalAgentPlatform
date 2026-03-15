@@ -1,0 +1,5 @@
+name: smoke
+type: smoke
+k6_script: perf/k6/chat-smoke.js
+voice_concurrency: 2
+

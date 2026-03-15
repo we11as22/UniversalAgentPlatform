@@ -1,0 +1,201 @@
+global:
+  publicScheme: http
+  livekitScheme: ws
+
+deployments:
+  admin-web:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  chat-web:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  admin-api:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 65
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  chat-gateway:
+    replicas: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 12
+      targetCPUUtilizationPercentage: 60
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  session-service:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  conversation-service:
+    replicas: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 10
+      targetCPUUtilizationPercentage: 65
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  agent-router:
+    replicas: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 12
+      targetCPUUtilizationPercentage: 60
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  provider-gateway:
+    replicas: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 16
+      targetCPUUtilizationPercentage: 55
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  voice-gateway:
+    replicas: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 12
+      targetCPUUtilizationPercentage: 60
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  quota-service:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  audit-service:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  transcript-service:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 6
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  agent-runtime:
+    replicas: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 16
+      targetCPUUtilizationPercentage: 60
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  tool-runner:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 65
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  rag-service:
+    replicas: 3
+    autoscaling:
+      enabled: true
+      minReplicas: 3
+      maxReplicas: 12
+      targetCPUUtilizationPercentage: 60
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  indexer:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 65
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+  workflow-workers:
+    replicas: 2
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 8
+      targetCPUUtilizationPercentage: 70
+    pdb:
+      enabled: true
+      maxUnavailable: 1
+
+statefulWorkloads:
+  postgres:
+    persistence:
+      enabled: true
+      size: 100Gi
+  redis:
+    persistence:
+      enabled: true
+      size: 20Gi
+  kafka:
+    persistence:
+      enabled: true
+      size: 100Gi
+  qdrant:
+    persistence:
+      enabled: true
+      size: 100Gi
+  minio:
+    persistence:
+      enabled: true
+      size: 200Gi
+  clickhouse:
+    persistence:
+      enabled: true
+      size: 200Gi

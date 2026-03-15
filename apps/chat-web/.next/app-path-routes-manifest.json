@@ -1,0 +1,10 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/health/route": "/api/health",
+  "/api-usage/page": "/api-usage",
+  "/login/page": "/login",
+  "/page": "/",
+  "/search/page": "/search",
+  "/settings/page": "/settings",
+  "/voice/page": "/voice"
+}

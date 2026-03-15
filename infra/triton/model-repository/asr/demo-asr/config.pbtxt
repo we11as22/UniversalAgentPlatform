@@ -1,0 +1,4 @@
+name: "demo-asr"
+backend: "python"
+max_batch_size: 8
+

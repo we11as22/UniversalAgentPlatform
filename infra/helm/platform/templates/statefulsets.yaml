@@ -1,0 +1,130 @@
+{{- range $name, $cfg := .Values.statefulWorkloads }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "uap.workloadLabels" (dict "root" $ "name" $name "mesh" false) | nindent 4 }}
+spec:
+  serviceName: {{ $name }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  template:
+    metadata:
+      labels:
+        {{- include "uap.workloadLabels" (dict "root" $ "name" $name "mesh" false) | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "uap.serviceAccountName" (dict "name" $name) }}
+      containers:
+        - name: {{ $name }}
+          image: "{{ $cfg.image.repository }}:{{ $cfg.image.tag }}"
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          {{- with $cfg.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $cfg.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $cfg.containerPorts }}
+          ports:
+            {{- range . }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol | default "TCP" }}
+            {{- end }}
+          {{- end }}
+          {{- if $cfg.env }}
+          env:
+            {{- range $env := $cfg.env }}
+            - name: {{ $env.name }}
+              {{- if hasKey $env "value" }}
+              value: {{ tpl $env.value $ | quote }}
+              {{- else if hasKey $env "secretKeyRef" }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $env.secretKeyRef.name }}
+                  key: {{ $env.secretKeyRef.key }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- with $cfg.volumeMounts }}
+          volumeMounts:
+            {{- range . }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if hasKey . "readOnly" }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+            {{- end }}
+          {{- end }}
+          {{- with $cfg.probes.readiness }}
+          readinessProbe:
+            {{- if .tcpSocket }}
+            tcpSocket:
+              port: {{ .port }}
+            {{- else if .exec }}
+            exec:
+              command:
+                {{- toYaml .exec.command | nindent 16 }}
+            {{- else }}
+            httpGet:
+              path: {{ .path }}
+              port: {{ .port }}
+            {{- end }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 5 }}
+            periodSeconds: {{ .periodSeconds | default 10 }}
+          {{- end }}
+          {{- with $cfg.probes.liveness }}
+          livenessProbe:
+            {{- if .tcpSocket }}
+            tcpSocket:
+              port: {{ .port }}
+            {{- else if .exec }}
+            exec:
+              command:
+                {{- toYaml .exec.command | nindent 16 }}
+            {{- else }}
+            httpGet:
+              path: {{ .path }}
+              port: {{ .port }}
+            {{- end }}
+            initialDelaySeconds: {{ .initialDelaySeconds | default 15 }}
+            periodSeconds: {{ .periodSeconds | default 20 }}
+          {{- end }}
+          resources:
+            {{- toYaml ($cfg.resources | default $.Values.global.defaultStatefulResources) | nindent 12 }}
+      volumes:
+        {{- if not $cfg.persistence.enabled }}
+        - name: data
+          emptyDir: {}
+        {{- end }}
+        {{- with $cfg.volumes }}
+        {{- range . }}
+        - name: {{ .name }}
+          {{- if hasKey . "configMap" }}
+          configMap:
+            name: {{ .configMap.name }}
+            {{- if hasKey .configMap "defaultMode" }}
+            defaultMode: {{ .configMap.defaultMode }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- end }}
+  {{- if $cfg.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ $cfg.persistence.size }}
+  {{- end }}
+---
+{{- end }}
+

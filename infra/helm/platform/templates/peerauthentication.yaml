@@ -1,0 +1,15 @@
+{{- if .Values.mesh.enabled }}
+apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: uap-mesh
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "uap.commonLabels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      uap.mesh/enabled: "true"
+  mtls:
+    mode: {{ .Values.mesh.mtlsMode }}
+{{- end }}

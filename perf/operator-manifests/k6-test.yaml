@@ -1,0 +1,15 @@
+apiVersion: k6.io/v1alpha1
+kind: TestRun
+metadata:
+  name: uap-smoke
+spec:
+  parallelism: 1
+  script:
+    configMap:
+      name: uap-k6-scripts
+      file: chat-smoke.js
+  runner:
+    env:
+      - name: BASE_URL
+        value: http://chat-gateway.uap.svc.cluster.local:8080
+

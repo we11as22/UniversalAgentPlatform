@@ -1,0 +1,5 @@
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/gateway.yaml
+  - ../../base/network-policy.yaml
+

@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: uap-platform
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/asudakov/UniversalAgentPlatform.git
+    path: infra/helm/platform
+    targetRevision: HEAD
+    helm:
+      valueFiles:
+        - values.yaml
+        - values-prod.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: uap
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,13 @@
+{
+  "slug": "bundle-rag-agent",
+  "display_name": "Bundle RAG Agent",
+  "description": "Docker-packaged RAG agent that answers from its own Qdrant knowledge scope.",
+  "modality": "text",
+  "system_prompt": "You are a grounded enterprise RAG agent. Prefer retrieved knowledge and say when evidence is missing.",
+  "prompt_template": "Answer using only the agent knowledge scope when relevant. Keep the answer concise and cite retrieved facts in plain language.",
+  "rag_enabled": true,
+  "config": {
+    "temperature": 0.1,
+    "retrieval_scope": "tenant+agent"
+  }
+}

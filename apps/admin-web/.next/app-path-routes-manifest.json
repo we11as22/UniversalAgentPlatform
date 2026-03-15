@@ -1,0 +1,13 @@
+{
+  "/_not-found/page": "/_not-found",
+  "/api/health/route": "/api/health",
+  "/agents/page": "/agents",
+  "/knowledge/page": "/knowledge",
+  "/models/page": "/models",
+  "/observability/page": "/observability",
+  "/page": "/",
+  "/perf/page": "/perf",
+  "/providers/page": "/providers",
+  "/security/page": "/security",
+  "/voice/page": "/voice"
+}

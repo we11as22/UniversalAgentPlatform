@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package uap.internal.v1;
+
+option go_package = "github.com/asudakov/universal-agent-platform/packages/schemas/gen/go/uap/internal/v1;internalv1";
+
+message HealthRequest {}
+
+message HealthResponse {
+  string service = 1;
+  string status = 2;
+  string version = 3;
+}
+
+service HealthService {
+  rpc GetHealth(HealthRequest) returns (HealthResponse);
+}
+

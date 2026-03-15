@@ -1,0 +1,154 @@
+map $http_upgrade $connection_upgrade {
+  default upgrade;
+  '' close;
+}
+
+server {
+  listen 80;
+  server_name chat.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_CHAT_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name admin.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_ADMIN_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name api.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_API_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name admin-api.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_ADMIN_API_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name grafana.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_GRAFANA_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name prometheus.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_PROMETHEUS_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name keycloak.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_KEYCLOAK_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name temporal.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_TEMPORAL_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name minio.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_MINIO_TARGET};
+  }
+}
+
+server {
+  listen 80;
+  server_name livekit.${UAP_BASE_DOMAIN};
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection $connection_upgrade;
+    proxy_pass http://${UAP_EDGE_LIVEKIT_TARGET};
+  }
+}

@@ -1,0 +1,1376 @@
+global:
+  namespace: uap
+  imagePullPolicy: IfNotPresent
+  baseDomain: uap.localtest.me
+  publicScheme: http
+  livekitScheme: ws
+  externalPort: 8088
+  livekitPort: 17880
+  livekitRtcPort: 17881
+  defaultResources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  defaultStatefulResources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+secrets:
+  platformDatabaseURL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+  redisURL: redis://redis:6379/0
+  clickhouseDsn: http://clickhouse:8123
+  temporalAddress: temporal:7233
+  postgresUser: uap
+  postgresPassword: uap
+  postgresDatabase: uap
+  keycloakAdminUser: admin
+  keycloakAdminPassword: admin
+  grafanaAdminUser: admin
+  grafanaAdminPassword: admin
+  minioRootUser: minio
+  minioRootPassword: minio123
+  livekitApiKey: devkey
+  livekitApiSecret: devsecret
+
+gateway:
+  enabled: true
+  className: eg
+  name: uap-gateway
+  routes:
+    - name: chat-web
+      hostname: chat.{{ .Values.global.baseDomain }}
+      service: chat-web
+      port: 3200
+      path: /
+    - name: admin-web
+      hostname: admin.{{ .Values.global.baseDomain }}
+      service: admin-web
+      port: 3300
+      path: /
+    - name: chat-api
+      hostname: api.{{ .Values.global.baseDomain }}
+      service: chat-gateway
+      port: 8080
+      path: /
+    - name: admin-api
+      hostname: admin-api.{{ .Values.global.baseDomain }}
+      service: admin-api
+      port: 8080
+      path: /
+    - name: voice-api
+      hostname: voice.{{ .Values.global.baseDomain }}
+      service: voice-gateway
+      port: 8080
+      path: /
+    - name: grafana
+      hostname: grafana.{{ .Values.global.baseDomain }}
+      service: grafana
+      port: 3000
+      path: /
+    - name: prometheus
+      hostname: prometheus.{{ .Values.global.baseDomain }}
+      service: prometheus
+      port: 9090
+      path: /
+    - name: keycloak
+      hostname: keycloak.{{ .Values.global.baseDomain }}
+      service: keycloak
+      port: 8080
+      path: /
+    - name: temporal
+      hostname: temporal.{{ .Values.global.baseDomain }}
+      service: temporal-ui
+      port: 8080
+      path: /
+    - name: minio
+      hostname: minio.{{ .Values.global.baseDomain }}
+      service: minio
+      port: 9001
+      path: /
+
+mesh:
+  enabled: true
+  mtlsMode: STRICT
+
+deployments:
+  admin-web:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/admin-web
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 3300
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 3300
+          targetPort: http
+    env:
+      - name: PORT
+        value: "3300"
+      - name: NEXT_PUBLIC_ADMIN_API_BASE_URL
+        value: '{{ .Values.global.publicScheme }}://admin-api.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_GRAFANA_URL
+        value: '{{ .Values.global.publicScheme }}://grafana.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_CHAT_WEB_URL
+        value: '{{ .Values.global.publicScheme }}://chat.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_KEYCLOAK_ADMIN_URL
+        value: '{{ .Values.global.publicScheme }}://keycloak.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}/admin'
+      - name: NEXT_PUBLIC_TEMPORAL_UI_URL
+        value: '{{ .Values.global.publicScheme }}://temporal.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_PROMETHEUS_URL
+        value: '{{ .Values.global.publicScheme }}://prometheus.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_MINIO_CONSOLE_URL
+        value: '{{ .Values.global.publicScheme }}://minio.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_LIVEKIT_HTTP_URL
+        value: '{{ .Values.global.publicScheme }}://livekit.{{ .Values.global.baseDomain }}:{{ .Values.global.livekitPort }}'
+      - name: KEYCLOAK_URL
+        value: '{{ .Values.global.publicScheme }}://keycloak.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: KEYCLOAK_REALM
+        value: uap
+    probes:
+      startup:
+        path: /api/health
+        port: http
+        failureThreshold: 30
+        periodSeconds: 5
+      readiness:
+        path: /api/health
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  chat-web:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/chat-web
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 3200
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 3200
+          targetPort: http
+    env:
+      - name: PORT
+        value: "3200"
+      - name: NEXT_PUBLIC_API_BASE_URL
+        value: '{{ .Values.global.publicScheme }}://api.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_VOICE_API_BASE_URL
+        value: '{{ .Values.global.publicScheme }}://voice.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_GRAFANA_URL
+        value: '{{ .Values.global.publicScheme }}://grafana.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: NEXT_PUBLIC_ADMIN_WEB_URL
+        value: '{{ .Values.global.publicScheme }}://admin.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: KEYCLOAK_URL
+        value: '{{ .Values.global.publicScheme }}://keycloak.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+      - name: KEYCLOAK_REALM
+        value: uap
+      - name: NEXT_PUBLIC_LIVEKIT_URL
+        value: '{{ .Values.global.livekitScheme }}://livekit.{{ .Values.global.baseDomain }}:{{ .Values.global.livekitPort }}'
+      - name: NEXT_PUBLIC_APP_URL
+        value: '{{ .Values.global.publicScheme }}://chat.{{ .Values.global.baseDomain }}:{{ .Values.global.externalPort }}'
+    probes:
+      startup:
+        path: /api/health
+        port: http
+        failureThreshold: 30
+        periodSeconds: 5
+      readiness:
+        path: /api/health
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  admin-api:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/admin-api
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+      - name: INDEXER_URL
+        value: http://indexer:8000
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  chat-gateway:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/chat-gateway
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+      - name: CONVERSATION_SERVICE_URL
+        value: http://conversation-service:8080
+      - name: AGENT_ROUTER_URL
+        value: http://agent-router:8080
+      - name: ADMIN_API_URL
+        value: http://admin-api:8080
+      - name: VOICE_GATEWAY_URL
+        value: http://voice-gateway:8080
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  session-service:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/session-service
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  conversation-service:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/conversation-service
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  agent-router:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/agent-router
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: PROVIDER_GATEWAY_URL
+        value: http://provider-gateway:8080
+      - name: AGENT_RUNTIME_URL
+        value: http://agent-runtime:8000
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  provider-gateway:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/provider-gateway
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+      - name: TRITON_ENDPOINT
+        value: http://triton:8000
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  voice-gateway:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/voice-gateway
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+      - name: LIVEKIT_URL
+        value: '{{ .Values.global.livekitScheme }}://livekit.{{ .Values.global.baseDomain }}:{{ .Values.global.livekitPort }}'
+      - name: PROVIDER_GATEWAY_URL
+        value: http://provider-gateway:8080
+      - name: TRANSCRIPT_SERVICE_URL
+        value: http://transcript-service:8080
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  quota-service:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/quota-service
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+      - name: REDIS_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: redis-url
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  audit-service:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/audit-service
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  transcript-service:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/transcript-service
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: HTTP_PORT
+        value: "8080"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  agent-runtime:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/agent-runtime
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8000
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8000
+          targetPort: http
+    env:
+      - name: SERVICE_PORT
+        value: "8000"
+      - name: PROVIDER_GATEWAY_URL
+        value: http://provider-gateway:8080
+      - name: RAG_SERVICE_URL
+        value: http://rag-service:8000
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  tool-runner:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/tool-runner
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8000
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8000
+          targetPort: http
+    env:
+      - name: SERVICE_PORT
+        value: "8000"
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  rag-service:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/rag-service
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8000
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8000
+          targetPort: http
+    env:
+      - name: SERVICE_PORT
+        value: "8000"
+      - name: QDRANT_URL
+        value: http://qdrant:6333
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  indexer:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/indexer
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8000
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8000
+          targetPort: http
+    env:
+      - name: SERVICE_PORT
+        value: "8000"
+      - name: QDRANT_URL
+        value: http://qdrant:6333
+      - name: MINIO_ENDPOINT
+        value: http://minio:9000
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  workflow-workers:
+    replicas: 1
+    mesh: true
+    image:
+      repository: uap/workflow-workers
+      tag: dev
+    containerPorts:
+      - name: http
+        containerPort: 8000
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8000
+          targetPort: http
+    env:
+      - name: SERVICE_PORT
+        value: "8000"
+      - name: DATABASE_URL
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: platform-database-url
+      - name: TEMPORAL_ADDRESS
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: temporal-address
+      - name: CHAT_GATEWAY_URL
+        value: http://chat-gateway:8080
+      - name: ADMIN_API_URL
+        value: http://admin-api:8080
+      - name: VOICE_GATEWAY_URL
+        value: http://voice-gateway:8080
+    probes:
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  temporal:
+    replicas: 1
+    image:
+      repository: temporalio/auto-setup
+      tag: 1.26.2
+    containerPorts:
+      - name: grpc
+        containerPort: 7233
+    service:
+      enabled: true
+      ports:
+        - name: grpc
+          port: 7233
+          targetPort: grpc
+    env:
+      - name: DB
+        value: postgresql12
+      - name: DB_PORT
+        value: "5432"
+      - name: POSTGRES_USER
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-user
+      - name: POSTGRES_PWD
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-password
+      - name: POSTGRES_SEEDS
+        value: postgres
+      - name: DYNAMIC_CONFIG_FILE_PATH
+        value: config/dynamicconfig/development-sql.yaml
+    volumes:
+      - name: temporal-dynamicconfig
+        configMap:
+          name: temporal-dynamicconfig
+    volumeMounts:
+      - name: temporal-dynamicconfig
+        mountPath: /etc/temporal/config/dynamicconfig
+        readOnly: true
+    probes:
+      readiness:
+        tcpSocket: true
+        port: grpc
+      liveness:
+        tcpSocket: true
+        port: grpc
+  temporal-ui:
+    replicas: 1
+    image:
+      repository: temporalio/ui
+      tag: 2.34.0
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    env:
+      - name: TEMPORAL_ADDRESS
+        value: temporal:7233
+    probes:
+      readiness:
+        path: /
+        port: http
+      liveness:
+        path: /
+        port: http
+  keycloak:
+    replicas: 1
+    image:
+      repository: quay.io/keycloak/keycloak
+      tag: 26.1.2
+    containerPorts:
+      - name: http
+        containerPort: 8080
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8080
+          targetPort: http
+    command:
+      - /opt/keycloak/bin/kc.sh
+    args:
+      - start
+      - --http-enabled=true
+      - --hostname-strict=false
+      - --proxy-headers=xforwarded
+      - --import-realm
+      - --health-enabled=true
+      - --metrics-enabled=true
+    env:
+      - name: KEYCLOAK_ADMIN
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: keycloak-admin-user
+      - name: KEYCLOAK_ADMIN_PASSWORD
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: keycloak-admin-password
+      - name: KC_DB
+        value: postgres
+      - name: KC_DB_URL_HOST
+        value: postgres
+      - name: KC_DB_URL_PORT
+        value: "5432"
+      - name: KC_DB_URL_DATABASE
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-database
+      - name: KC_DB_USERNAME
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-user
+      - name: KC_DB_PASSWORD
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-password
+      - name: KC_HEALTH_ENABLED
+        value: "true"
+      - name: KC_METRICS_ENABLED
+        value: "true"
+    volumes:
+      - name: keycloak-realm
+        configMap:
+          name: keycloak-realm
+    volumeMounts:
+      - name: keycloak-realm
+        mountPath: /opt/keycloak/data/import
+        readOnly: true
+    probes:
+      startup:
+        path: /health/started
+        port: http
+        failureThreshold: 60
+        periodSeconds: 5
+      readiness:
+        path: /health/ready
+        port: http
+      liveness:
+        path: /health/live
+        port: http
+  livekit:
+    replicas: 1
+    image:
+      repository: livekit/livekit-server
+      tag: v1.8.3
+    containerPorts:
+      - name: http
+        containerPort: 7880
+      - name: rtc
+        containerPort: 7881
+        protocol: UDP
+    service:
+      enabled: true
+      type: NodePort
+      ports:
+        - name: http
+          port: 7880
+          targetPort: http
+          nodePort: 30090
+        - name: rtc
+          port: 7881
+          targetPort: rtc
+          protocol: UDP
+          nodePort: 30091
+    args:
+      - --config
+      - /etc/livekit/livekit.yaml
+    volumes:
+      - name: livekit-config
+        configMap:
+          name: livekit-config
+    volumeMounts:
+      - name: livekit-config
+        mountPath: /etc/livekit
+        readOnly: true
+    probes:
+      readiness:
+        tcpSocket: true
+        port: http
+      liveness:
+        tcpSocket: true
+        port: http
+  otel-collector:
+    replicas: 1
+    image:
+      repository: otel/opentelemetry-collector-contrib
+      tag: 0.120.0
+    command:
+      - /otelcol-contrib
+    args:
+      - --config=/etc/otelcol/config.yaml
+    containerPorts:
+      - name: grpc
+        containerPort: 4317
+      - name: http
+        containerPort: 4318
+    service:
+      enabled: true
+      ports:
+        - name: grpc
+          port: 4317
+          targetPort: grpc
+        - name: http
+          port: 4318
+          targetPort: http
+    volumes:
+      - name: otel-config
+        configMap:
+          name: otel-collector-config
+    volumeMounts:
+      - name: otel-config
+        mountPath: /etc/otelcol
+        readOnly: true
+    probes:
+      readiness:
+        tcpSocket: true
+        port: grpc
+      liveness:
+        tcpSocket: true
+        port: grpc
+  prometheus:
+    replicas: 1
+    image:
+      repository: prom/prometheus
+      tag: v3.2.1
+    command:
+      - /bin/prometheus
+    args:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    containerPorts:
+      - name: http
+        containerPort: 9090
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 9090
+          targetPort: http
+    volumes:
+      - name: prometheus-config
+        configMap:
+          name: prometheus-config
+      - name: prometheus-data
+        emptyDir: {}
+    volumeMounts:
+      - name: prometheus-config
+        mountPath: /etc/prometheus
+        readOnly: true
+      - name: prometheus-data
+        mountPath: /prometheus
+    probes:
+      readiness:
+        path: /-/ready
+        port: http
+      liveness:
+        path: /-/healthy
+        port: http
+  loki:
+    replicas: 1
+    image:
+      repository: grafana/loki
+      tag: 3.4.2
+    args:
+      - -config.file=/etc/loki/loki-config.yml
+    containerPorts:
+      - name: http
+        containerPort: 3100
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 3100
+          targetPort: http
+    volumes:
+      - name: loki-config
+        configMap:
+          name: loki-config
+      - name: loki-data
+        emptyDir: {}
+    volumeMounts:
+      - name: loki-config
+        mountPath: /etc/loki
+        readOnly: true
+      - name: loki-data
+        mountPath: /tmp/loki
+    probes:
+      readiness:
+        path: /ready
+        port: http
+      liveness:
+        path: /ready
+        port: http
+  tempo:
+    replicas: 1
+    image:
+      repository: grafana/tempo
+      tag: 2.7.1
+    args:
+      - -config.file=/etc/tempo/tempo.yaml
+    containerPorts:
+      - name: http
+        containerPort: 3200
+      - name: grpc
+        containerPort: 4317
+      - name: http-otlp
+        containerPort: 4318
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 3200
+          targetPort: http
+        - name: grpc
+          port: 4317
+          targetPort: grpc
+        - name: http-otlp
+          port: 4318
+          targetPort: http-otlp
+    volumes:
+      - name: tempo-config
+        configMap:
+          name: tempo-config
+      - name: tempo-data
+        emptyDir: {}
+    volumeMounts:
+      - name: tempo-config
+        mountPath: /etc/tempo
+        readOnly: true
+      - name: tempo-data
+        mountPath: /tmp/tempo
+    probes:
+      readiness:
+        path: /ready
+        port: http
+      liveness:
+        path: /ready
+        port: http
+  grafana:
+    replicas: 1
+    image:
+      repository: grafana/grafana
+      tag: 11.5.2
+    containerPorts:
+      - name: http
+        containerPort: 3000
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 3000
+          targetPort: http
+    env:
+      - name: GF_SECURITY_ADMIN_USER
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: grafana-admin-user
+      - name: GF_SECURITY_ADMIN_PASSWORD
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: grafana-admin-password
+    volumes:
+      - name: grafana-datasources
+        configMap:
+          name: grafana-datasources
+      - name: grafana-dashboard-provisioning
+        configMap:
+          name: grafana-dashboard-provisioning
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: grafana-data
+        emptyDir: {}
+    volumeMounts:
+      - name: grafana-datasources
+        mountPath: /etc/grafana/provisioning/datasources
+        readOnly: true
+      - name: grafana-dashboard-provisioning
+        mountPath: /etc/grafana/provisioning/dashboards
+        readOnly: true
+      - name: grafana-dashboards
+        mountPath: /var/lib/grafana/dashboards
+        readOnly: true
+      - name: grafana-data
+        mountPath: /var/lib/grafana
+    probes:
+      readiness:
+        path: /api/health
+        port: http
+      liveness:
+        path: /api/health
+        port: http
+  triton:
+    enabled: false
+    replicas: 1
+    image:
+      repository: nvcr.io/nvidia/tritonserver
+      tag: 24.12-py3
+    command:
+      - tritonserver
+    args:
+      - --model-repository=/models
+      - --http-port=8000
+      - --grpc-port=8001
+      - --metrics-port=8002
+    containerPorts:
+      - name: http
+        containerPort: 8000
+      - name: grpc
+        containerPort: 8001
+      - name: metrics
+        containerPort: 8002
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8000
+          targetPort: http
+        - name: grpc
+          port: 8001
+          targetPort: grpc
+        - name: metrics
+          port: 8002
+          targetPort: metrics
+    volumes:
+      - name: triton-model-llm
+        configMap:
+          name: triton-model-llm
+      - name: triton-model-asr
+        configMap:
+          name: triton-model-asr
+      - name: triton-model-tts
+        configMap:
+          name: triton-model-tts
+    volumeMounts:
+      - name: triton-model-llm
+        mountPath: /models/llm/demo-llm/config.pbtxt
+        subPath: config.pbtxt
+        readOnly: true
+      - name: triton-model-asr
+        mountPath: /models/asr/demo-asr/config.pbtxt
+        subPath: config.pbtxt
+        readOnly: true
+      - name: triton-model-tts
+        mountPath: /models/tts/demo-tts/config.pbtxt
+        subPath: config.pbtxt
+        readOnly: true
+    probes:
+      readiness:
+        path: /v2/health/ready
+        port: http
+      liveness:
+        path: /v2/health/live
+        port: http
+
+statefulWorkloads:
+  postgres:
+    image:
+      repository: postgres
+      tag: "16.8"
+    containerPorts:
+      - name: postgres
+        containerPort: 5432
+    service:
+      enabled: true
+      ports:
+        - name: postgres
+          port: 5432
+          targetPort: postgres
+    env:
+      - name: POSTGRES_DB
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-database
+      - name: POSTGRES_USER
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-user
+      - name: POSTGRES_PASSWORD
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: postgres-password
+    dataMountPath: /var/lib/postgresql/data
+    volumes:
+      - name: postgres-init
+        configMap:
+          name: postgres-init
+          defaultMode: 493
+      - name: postgres-migrations
+        configMap:
+          name: postgres-migrations
+      - name: postgres-seeds
+        configMap:
+          name: postgres-seeds
+    volumeMounts:
+      - name: data
+        mountPath: /var/lib/postgresql/data
+      - name: postgres-init
+        mountPath: /docker-entrypoint-initdb.d
+        readOnly: true
+      - name: postgres-migrations
+        mountPath: /bootstrap/migrations
+        readOnly: true
+      - name: postgres-seeds
+        mountPath: /bootstrap/seeds
+        readOnly: true
+    persistence:
+      enabled: false
+      size: 20Gi
+    probes:
+      readiness:
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+      liveness:
+        exec:
+          command:
+            - /bin/sh
+            - -c
+            - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
+  redis:
+    image:
+      repository: redis
+      tag: "7.4"
+    command:
+      - redis-server
+    args:
+      - --appendonly
+      - "yes"
+    containerPorts:
+      - name: redis
+        containerPort: 6379
+    service:
+      enabled: true
+      ports:
+        - name: redis
+          port: 6379
+          targetPort: redis
+    dataMountPath: /data
+    volumeMounts:
+      - name: data
+        mountPath: /data
+    persistence:
+      enabled: false
+      size: 8Gi
+    probes:
+      readiness:
+        exec:
+          command: ["redis-cli", "ping"]
+      liveness:
+        exec:
+          command: ["redis-cli", "ping"]
+  kafka:
+    image:
+      repository: apache/kafka
+      tag: 3.9.0
+    containerPorts:
+      - name: kafka
+        containerPort: 9092
+      - name: controller
+        containerPort: 9093
+    service:
+      enabled: true
+      ports:
+        - name: kafka
+          port: 9092
+          targetPort: kafka
+        - name: controller
+          port: 9093
+          targetPort: controller
+    env:
+      - name: KAFKA_NODE_ID
+        value: "1"
+      - name: KAFKA_PROCESS_ROLES
+        value: broker,controller
+      - name: KAFKA_LISTENERS
+        value: PLAINTEXT://:9092,CONTROLLER://:9093
+      - name: KAFKA_ADVERTISED_LISTENERS
+        value: PLAINTEXT://kafka:9092
+      - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+        value: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - name: KAFKA_CONTROLLER_LISTENER_NAMES
+        value: CONTROLLER
+      - name: KAFKA_CONTROLLER_QUORUM_VOTERS
+        value: 1@kafka:9093
+      - name: KAFKA_INTER_BROKER_LISTENER_NAME
+        value: PLAINTEXT
+      - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+        value: "1"
+      - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+        value: "1"
+      - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+        value: "1"
+    dataMountPath: /var/lib/kafka/data
+    volumeMounts:
+      - name: data
+        mountPath: /var/lib/kafka/data
+    persistence:
+      enabled: false
+      size: 20Gi
+    probes:
+      readiness:
+        tcpSocket: true
+        port: kafka
+      liveness:
+        tcpSocket: true
+        port: kafka
+  qdrant:
+    image:
+      repository: qdrant/qdrant
+      tag: v1.13.4
+    containerPorts:
+      - name: http
+        containerPort: 6333
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 6333
+          targetPort: http
+    dataMountPath: /qdrant/storage
+    volumeMounts:
+      - name: data
+        mountPath: /qdrant/storage
+    persistence:
+      enabled: false
+      size: 20Gi
+    probes:
+      readiness:
+        path: /readyz
+        port: http
+      liveness:
+        path: /readyz
+        port: http
+  minio:
+    image:
+      repository: quay.io/minio/minio
+      tag: RELEASE.2025-02-18T16-25-55Z
+    command:
+      - minio
+    args:
+      - server
+      - /data
+      - --console-address
+      - :9001
+    containerPorts:
+      - name: api
+        containerPort: 9000
+      - name: console
+        containerPort: 9001
+    service:
+      enabled: true
+      ports:
+        - name: api
+          port: 9000
+          targetPort: api
+        - name: console
+          port: 9001
+          targetPort: console
+    env:
+      - name: MINIO_ROOT_USER
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: minio-root-user
+      - name: MINIO_ROOT_PASSWORD
+        secretKeyRef:
+          name: uap-platform-secrets
+          key: minio-root-password
+    dataMountPath: /data
+    volumeMounts:
+      - name: data
+        mountPath: /data
+    persistence:
+      enabled: false
+      size: 20Gi
+    probes:
+      readiness:
+        path: /minio/health/ready
+        port: api
+      liveness:
+        path: /minio/health/live
+        port: api
+  clickhouse:
+    image:
+      repository: clickhouse/clickhouse-server
+      tag: "25.1"
+    containerPorts:
+      - name: http
+        containerPort: 8123
+      - name: native
+        containerPort: 9000
+    service:
+      enabled: true
+      ports:
+        - name: http
+          port: 8123
+          targetPort: http
+        - name: native
+          port: 9000
+          targetPort: native
+    dataMountPath: /var/lib/clickhouse
+    volumeMounts:
+      - name: data
+        mountPath: /var/lib/clickhouse
+    persistence:
+      enabled: false
+      size: 20Gi
+    probes:
+      readiness:
+        tcpSocket: true
+        port: http
+      liveness:
+        tcpSocket: true
+        port: http

@@ -1,0 +1,21 @@
+{{- range $name, $cfg := .Values.deployments }}
+{{- if and (ne (default true $cfg.enabled) false) (hasKey $cfg "pdb") (($cfg.pdb.enabled | default false)) }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "uap.workloadLabels" (dict "root" $ "name" $name "mesh" ($cfg.mesh | default false)) | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  {{- if hasKey $cfg.pdb "minAvailable" }}
+  minAvailable: {{ $cfg.pdb.minAvailable }}
+  {{- else }}
+  maxUnavailable: {{ $cfg.pdb.maxUnavailable | default 1 }}
+  {{- end }}
+---
+{{- end }}
+{{- end }}

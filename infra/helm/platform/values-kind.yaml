@@ -1,0 +1,5 @@
+global:
+  baseDomain: uap.localtest.me
+  externalPort: 8088
+  livekitPort: 17880
+  livekitRtcPort: 17881

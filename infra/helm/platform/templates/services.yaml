@@ -1,0 +1,53 @@
+{{- range $name, $cfg := .Values.deployments }}
+{{- if and (ne (default true $cfg.enabled) false) $cfg.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "uap.workloadLabels" (dict "root" $ "name" $name "mesh" ($cfg.mesh | default false)) | nindent 4 }}
+spec:
+  type: {{ $cfg.service.type | default "ClusterIP" }}
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+  ports:
+    {{- range $cfg.service.ports }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .targetPort }}
+      protocol: {{ .protocol | default "TCP" }}
+      {{- if hasKey . "nodePort" }}
+      nodePort: {{ .nodePort }}
+      {{- end }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}
+{{- range $name, $cfg := .Values.statefulWorkloads }}
+{{- if $cfg.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.global.namespace }}
+  labels:
+    {{- include "uap.workloadLabels" (dict "root" $ "name" $name "mesh" false) | nindent 4 }}
+spec:
+  type: {{ $cfg.service.type | default "ClusterIP" }}
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+  ports:
+    {{- range $cfg.service.ports }}
+    - name: {{ .name }}
+      port: {{ .port }}
+      targetPort: {{ .targetPort }}
+      protocol: {{ .protocol | default "TCP" }}
+      {{- if hasKey . "nodePort" }}
+      nodePort: {{ .nodePort }}
+      {{- end }}
+    {{- end }}
+---
+{{- end }}
+{{- end }}
+

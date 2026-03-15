@@ -1,0 +1,41 @@
+{
+  "uid": "uap-agent-overview",
+  "title": "Agent Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Per-Agent Focus",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "Templated dashboard target for latency, throughput, retrieval quality, tool success and voice utilization by agent."
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Agent Routing Services Up",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "sum(up{job=~\".*agent-router.*|.*agent-runtime.*|.*tool-runner.*|.*rag-service.*\"})", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

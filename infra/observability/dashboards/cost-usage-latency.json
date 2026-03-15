@@ -1,0 +1,41 @@
+{
+  "uid": "uap-cost-usage-latency",
+  "title": "Cost / Usage / Latency",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "text",
+      "title": "Efficiency Lens",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "Reserved for spend, provider mix, usage events, latency budget and efficiency tracking."
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Observed Targets",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "sum(up)", "refId": "A" }],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }, { "color": "green", "value": 1 }] }
+        },
+        "overrides": []
+      }
+    }
+  ]
+}

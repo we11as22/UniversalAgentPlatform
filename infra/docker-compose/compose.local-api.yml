@@ -1,0 +1,229 @@
+services:
+  admin-web:
+    build:
+      context: ../..
+      dockerfile: apps/admin-web/Dockerfile
+    environment:
+      PORT: 3300
+      NEXT_PUBLIC_ADMIN_API_BASE_URL: http://localhost:3210
+      KEYCLOAK_URL: http://localhost:18081
+      KEYCLOAK_REALM: uap
+    ports:
+      - "3300:3300"
+    depends_on:
+      - keycloak
+      - admin-api
+
+  chat-web:
+    build:
+      context: ../..
+      dockerfile: apps/chat-web/Dockerfile
+    environment:
+      PORT: 3200
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:3220
+      NEXT_PUBLIC_VOICE_API_BASE_URL: http://localhost:3270
+      KEYCLOAK_URL: http://localhost:18081
+      KEYCLOAK_REALM: uap
+      NEXT_PUBLIC_LIVEKIT_URL: ws://localhost:17882
+      NEXT_PUBLIC_LIVEKIT_HTTP_URL: http://localhost:17882
+    ports:
+      - "3200:3200"
+    depends_on:
+      - keycloak
+      - chat-gateway
+
+  admin-api:
+    build:
+      context: ../..
+      dockerfile: services/admin-api/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+    ports:
+      - "3210:8080"
+    depends_on:
+      - postgres
+
+  chat-gateway:
+    build:
+      context: ../..
+      dockerfile: services/chat-gateway/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+      CONVERSATION_SERVICE_URL: http://conversation-service:8080
+      AGENT_ROUTER_URL: http://agent-router:8080
+      ADMIN_API_URL: http://admin-api:8080
+      VOICE_GATEWAY_URL: http://voice-gateway:8080
+    ports:
+      - "3220:8080"
+    depends_on:
+      - postgres
+      - conversation-service
+      - agent-router
+
+  session-service:
+    build:
+      context: ../..
+      dockerfile: services/session-service/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+    ports:
+      - "3230:8080"
+
+  conversation-service:
+    build:
+      context: ../..
+      dockerfile: services/conversation-service/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+    ports:
+      - "3240:8080"
+    depends_on:
+      - postgres
+
+  agent-router:
+    build:
+      context: ../..
+      dockerfile: services/agent-router/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      PROVIDER_GATEWAY_URL: http://provider-gateway:8080
+      AGENT_RUNTIME_URL: http://agent-runtime:8000
+    ports:
+      - "3250:8080"
+    depends_on:
+      - provider-gateway
+      - agent-runtime
+
+  provider-gateway:
+    build:
+      context: ../..
+      dockerfile: services/provider-gateway/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+      TRITON_ENDPOINT: http://triton:8000
+    ports:
+      - "3260:8080"
+
+  voice-gateway:
+    build:
+      context: ../..
+      dockerfile: services/voice-gateway/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+      LIVEKIT_URL: ws://livekit:7880
+      PROVIDER_GATEWAY_URL: http://provider-gateway:8080
+      TRANSCRIPT_SERVICE_URL: http://transcript-service:8080
+    ports:
+      - "3270:8080"
+    depends_on:
+      - livekit
+      - transcript-service
+
+  quota-service:
+    build:
+      context: ../..
+      dockerfile: services/quota-service/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "3280:8080"
+    depends_on:
+      - postgres
+      - redis
+
+  audit-service:
+    build:
+      context: ../..
+      dockerfile: services/audit-service/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+    ports:
+      - "3290:8080"
+    depends_on:
+      - postgres
+
+  transcript-service:
+    build:
+      context: ../..
+      dockerfile: services/transcript-service/Dockerfile
+    environment:
+      HTTP_PORT: 8080
+      DATABASE_URL: postgres://uap:uap@postgres:5432/uap?sslmode=disable
+    ports:
+      - "3291:8080"
+    depends_on:
+      - postgres
+
+  agent-runtime:
+    build:
+      context: ../..
+      dockerfile: services/agent-runtime/Dockerfile
+    environment:
+      SERVICE_PORT: 8000
+      PROVIDER_GATEWAY_URL: http://provider-gateway:8080
+      RAG_SERVICE_URL: http://rag-service:8000
+    ports:
+      - "18001:8000"
+
+  tool-runner:
+    build:
+      context: ../..
+      dockerfile: services/tool-runner/Dockerfile
+    environment:
+      SERVICE_PORT: 8000
+    ports:
+      - "18002:8000"
+
+  rag-service:
+    build:
+      context: ../..
+      dockerfile: services/rag-service/Dockerfile
+    environment:
+      SERVICE_PORT: 8000
+      QDRANT_URL: http://qdrant:6333
+    ports:
+      - "18003:8000"
+    depends_on:
+      - qdrant
+
+  indexer:
+    build:
+      context: ../..
+      dockerfile: services/indexer/Dockerfile
+    environment:
+      SERVICE_PORT: 8000
+      QDRANT_URL: http://qdrant:6333
+      MINIO_ENDPOINT: http://minio:9000
+    ports:
+      - "18004:8000"
+    depends_on:
+      - qdrant
+      - minio
+
+  workflow-workers:
+    build:
+      context: ../..
+      dockerfile: services/workflow-workers/Dockerfile
+    environment:
+      SERVICE_PORT: 8000
+      DATABASE_URL: postgresql://uap:uap@postgres:5432/uap
+      TEMPORAL_ADDRESS: temporal:7233
+      CHAT_GATEWAY_URL: http://chat-gateway:8080
+      ADMIN_API_URL: http://admin-api:8080
+      VOICE_GATEWAY_URL: http://voice-gateway:8080
+    ports:
+      - "18005:8000"
+    depends_on:
+      - temporal
+      - postgres
+      - chat-gateway
+      - admin-api
+      - voice-gateway

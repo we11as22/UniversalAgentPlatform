@@ -1,0 +1,5 @@
+name: failure-injection-lite
+type: failure-injection-lite
+k6_script: perf/k6/chat-smoke.js
+voice_concurrency: 6
+
